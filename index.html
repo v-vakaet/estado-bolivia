@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Crisis en Bolivia — 30 de mayo de 2026</title>
+<!-- Sin dependencias externas: usa fuentes del sistema para cargar al instante y funcionar sin conexión. -->
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #181819;
+    --border: #242428;
+    --border2: #32323a;
+    --red: #ef4444;
+    --red-glow: rgba(239,68,68,0.15);
+    --red-dim: #3b0d0d;
+    --amber: #f59e0b;
+    --amber-dim: #2d1b00;
+    --green: #22c55e;
+    --green-dim: #052e16;
+    --blue: #60a5fa;
+    --text: #e4e4e8;
+    --text-muted: #5a5a62;
+    --text-dim: #8888a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ─── LAST UPDATED BANNER ────────────────────────────── */
+  .updated-banner {
+    background: #1a1400;
+    border: 1px solid var(--amber);
+    border-left: 4px solid var(--amber);
+    padding: 11px 16px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+  .updated-banner .ub-stamp {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.02em;
+  }
+  .updated-banner .ub-note {
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+
+  /* ─── HEADER ─────────────────────────────────────────── */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--red);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-title {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .header-title .country { color: var(--red); }
+
+  .header-meta {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.06em;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .alert-pill {
+    background: var(--red);
+    color: #fff;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    padding: 5px 12px;
+    text-transform: uppercase;
+    animation: pulse-a 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-a { 0%,100%{opacity:1} 50%{opacity:0.65} }
+
+  .day-counter {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--amber);
+    letter-spacing: 0.04em;
+    text-align: right;
+  }
+  .day-counter span { font-size: 10px; display: block; color: var(--text-muted); font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; letter-spacing: 0.08em; font-weight: 400; }
+
+  /* ─── CONTAINER ───────────────────────────────────────── */
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ─── SECTION LABEL ──────────────────────────────────── */
+  .sec-label {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-label::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ─── METRICS ROW ────────────────────────────────────── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .mc-red::after   { background: var(--red); }
+  .mc-amber::after { background: var(--amber); }
+  .mc-blue::after  { background: var(--blue); }
+  .mc-green::after { background: var(--green); }
+
+  .metric-num {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .mc-red   .metric-num { color: var(--red); }
+  .mc-amber .metric-num { color: var(--amber); }
+  .mc-blue  .metric-num { color: var(--blue); }
+  .mc-green .metric-num { color: var(--green); }
+
+  .metric-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .metric-sub {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 5px;
+  }
+
+  /* ─── CHART (SVG-based, overflow-proof) ──────────────── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px 14px;
+  }
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .chart-box { display: flex; flex-direction: column; }
+  .chart-title {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .chart-subtitle {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  svg.cx { width: 100%; height: auto; display: block; }
+  .cx-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+  .cx-yl { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 8px; fill: var(--text-muted); text-anchor: end; }
+  .cx-bar { fill: var(--red-dim); stroke: var(--red); stroke-width: 1.5; }
+  .cx-bar.peak { fill: #5c0a0a; stroke: #ff6060; }
+  .cx-val { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 9px; fill: var(--text-dim); text-anchor: middle; }
+  .cx-val.peak { fill: #ff8080; font-weight: 600; }
+  .cx-xl { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 8.5px; fill: var(--text); text-anchor: middle; font-weight: 500; }
+  .cx-xl2 { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 7.5px; fill: var(--text-muted); text-anchor: middle; }
+  .chart-note {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8.5px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  .chart-note b { color: var(--text-dim); font-weight: 600; }
+  @media (max-width: 640px) {
+    .charts-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+
+  /* ─── WEEK TIMELINE ──────────────────────────────────── */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .week-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .wk-header {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wk-num {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .wk-dates {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .wk-peak {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .wk-peak-label { font-size: 9px; font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; color: var(--text-muted); font-weight: 400; display: block; }
+
+  .wk-sev {
+    height: 3px;
+    width: 100%;
+  }
+  .wks1 { background: #f59e0b; width: 30%; }
+  .wks2 { background: #f97316; width: 60%; }
+  .wks3 { background: #ef4444; width: 85%; }
+  .wks4 { background: var(--red); width: 100%; animation: flicker 1.4s ease-in-out infinite; }
+  @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .wk-body {
+    padding: 10px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .wk-evt {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-dim);
+    padding-left: 10px;
+    position: relative;
+  }
+  .wk-evt::before { content:'›'; position:absolute; left:0; color: var(--text-muted); }
+  .wk-evt.e-death  { color: var(--red); }
+  .wk-evt.e-death::before  { color: var(--red); content:'†'; font-size: 12px; }
+  .wk-evt.e-warn   { color: var(--amber); }
+  .wk-evt.e-warn::before   { color: var(--amber); content:'!'; font-weight:700; font-size:11px; }
+
+  /* ─── INCIDENT LOG ───────────────────────────────────── */
+  .log-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .log-row {
+    display: grid;
+    grid-template-columns: 90px 72px 1fr;
+    gap: 10px;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-row:hover { background: var(--surface2); }
+
+  .log-date {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    padding-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .log-tag {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    padding: 2px 5px;
+    text-transform: uppercase;
+    display: inline-block;
+    height: fit-content;
+    margin-top: 1px;
+    white-space: nowrap;
+  }
+  .lt-death    { background: var(--red-dim);   color: #ff8080; }
+  .lt-violence { background: #2a1000;           color: #fb923c; }
+  .lt-tourist  { background: var(--amber-dim);  color: var(--amber); }
+  .lt-military { background: #0a1625;           color: var(--blue); }
+  .lt-spread   { background: #0d1a0d;           color: #86efac; }
+
+  .log-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .log-desc b { color: var(--text); font-weight: 500; }
+  .log-desc .hi { color: var(--amber); }
+  .log-desc .hi-red { color: var(--red); }
+
+  /* ─── TOURIST RISK PANEL ─────────────────────────────── */
+  .risk-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .risk-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  .risk-panel-title {
+    font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .rdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink:0; }
+  .rd-red   { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+  .rd-amber { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,0.5); }
+  .rd-green { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+
+  .risk-item {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-lv {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    padding: 2px 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    margin-top: 1px;
+    letter-spacing: 0.06em;
+  }
+  .rlv-hi  { background: var(--red-dim);   color: var(--red); }
+  .rlv-med { background: var(--amber-dim); color: var(--amber); }
+  .rlv-lo  { background: var(--green-dim); color: var(--green); }
+  .risk-text { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  .risk-text b { color: var(--text); font-weight: 500; }
+
+  /* Open corridors */
+  .open-route {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .open-route:last-child { border-bottom: none; }
+  .or-dot { color: var(--green); font-size: 14px; margin-top: -1px; flex-shrink: 0; }
+  .or-dot.warn { color: var(--amber); }
+  .or-text { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+  .or-text b { color: var(--text); font-weight: 500; }
+  .or-text .caveat { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 9px; color: var(--text-muted); display: block; margin-top: 2px; }
+
+  /* ─── STATUS BOX ─────────────────────────────────────── */
+  .status-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-box::before {
+    content: 'EVALUACIÓN DE LA SITUACIÓN — 30 DE MAYO DE 2026';
+    display: block;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--red);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .status-para {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.75;
+    margin-bottom: 8px;
+  }
+  .status-para:last-child { margin-bottom: 0; }
+  .status-para b { color: var(--text); font-weight: 500; }
+  .status-para .hi-a { color: var(--amber); font-weight: 500; }
+  .status-para .hi-r { color: var(--red); font-weight: 500; }
+  .status-para .hi-g { color: var(--green); font-weight: 500; }
+
+  /* ─── COMPARISON BOX ─────────────────────────────────── */
+  .compare-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .compare-box b { color: var(--amber); font-weight: 500; }
+  .compare-label {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* ─── DECISION BOX ──────────────────────────────────────*/
+  .decision-box {
+    background: #0d1a0a;
+    border: 2px solid var(--amber);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .decision-box::before {
+    content: '⚑ GUÍA PARA VIAJEROS ACTUALMENTE EN BOLIVIA — 30 DE MAYO DE 2026';
+    display: block;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .decision-flight {
+    background: #1a1200;
+    border: 1px solid var(--amber);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .decision-flight .fl-label { font-size: 9px; color: var(--text-muted); display: block; }
+  .decision-flight .fl-val { font-size: 14px; font-weight: 600; display: block; }
+  .decision-flight .fl-divider { color: var(--border2); font-size: 18px; }
+
+  .dec-leg {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .dec-leg:last-of-type { border-bottom: none; margin-bottom: 0; }
+  .dec-date {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+  .dec-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .dec-status b { color: var(--text); font-weight: 500; }
+  .dec-ok   { color: var(--green) !important; font-weight: 500; }
+  .dec-warn { color: var(--amber) !important; font-weight: 500; }
+  .dec-bad  { color: var(--red) !important; font-weight: 500; }
+
+  .dec-verdict {
+    background: #1a0d00;
+    border-left: 3px solid var(--amber);
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .dec-verdict b { color: var(--amber); font-weight: 600; }
+  .dec-verdict .go   { color: var(--green); font-weight: 600; }
+  .dec-verdict .nogo { color: var(--red); font-weight: 600; }
+
+  /* New week 4 update card highlight */
+  .week-card.w4-update { border-color: var(--red); box-shadow: 0 0 12px rgba(239,68,68,0.12); }
+
+  /* ─── HEATMAP ────────────────────────────────────────── */
+  .heatmap-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 20px 18px;
+  }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(240px, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  .heatmap-svg-col { display: flex; flex-direction: column; align-items: center; }
+  .heatmap-svg { width: 100%; max-width: 360px; height: auto; }
+  .dept-shape { stroke: #0a0a0b; stroke-width: 1.5; transition: opacity 0.2s; cursor: default; }
+  .dept-shape:hover { opacity: 0.82; }
+  .dept-label { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 9px; fill: #fff; font-weight: 600; pointer-events: none; text-anchor: middle; }
+  .dept-sublabel { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 8px; fill: rgba(255,255,255,0.8); pointer-events: none; text-anchor: middle; }
+  .dept-label.dark { fill: #1a1a1a; }
+  .dept-sublabel.dark { fill: rgba(0,0,0,0.65); }
+
+  .heat-legend {
+    margin-top: 14px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .heat-legend-title {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .heat-scale { display: flex; height: 14px; border: 1px solid var(--border2); }
+  .heat-scale div { flex: 1; }
+  .heat-scale-labels { display: flex; justify-content: space-between; font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 7.5px; color: var(--text-muted); margin-top: 3px; }
+
+  .density-table { display: flex; flex-direction: column; gap: 0; }
+  .density-table-head {
+    display: grid;
+    grid-template-columns: 16px 1fr 40px 54px;
+    gap: 8px;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 0 0 7px 0;
+    border-bottom: 1px solid var(--border2);
+  }
+  .density-row {
+    display: grid;
+    grid-template-columns: 16px 1fr 40px 54px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0 9px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .density-row:last-child { border-bottom: none; }
+  .d-rank { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 10px; color: var(--text-muted); }
+  .d-name { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); }
+  .d-swatch { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+  .d-count { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 11px; color: var(--text-dim); text-align: right; }
+  .d-density { font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif; font-size: 17px; font-weight: 700; text-align: right; line-height: 1; }
+
+  .heat-insight {
+    background: var(--surface2);
+    border-left: 3px solid var(--amber);
+    padding: 11px 14px;
+    margin-top: 16px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+  .heat-insight b { color: var(--text); font-weight: 500; }
+  .heat-insight .hl-r { color: var(--red); font-weight: 500; }
+  .heat-insight .hl-g { color: var(--green); font-weight: 500; }
+
+  @media (max-width: 680px) {
+    .heatmap-grid { grid-template-columns: 1fr; gap: 18px; }
+  }
+
+  /* ─── CONNECTIVITY GRAPH ─────────────────────────────── */
+  .cg-legend { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: flex-start; margin-bottom: 12px; background: var(--surface2); border: 1px solid var(--border); padding: 12px 16px; }
+  .cg-legend-block { display: flex; flex-direction: column; gap: 6px; }
+  .cg-legend-block h4 { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+  .cg-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+  .cg-ek { width: 28px; height: 0; flex-shrink: 0; }
+  .cg-ek-open { border-top: 3px solid var(--green); }
+  .cg-ek-caution { border-top: 3px dashed var(--amber); }
+  .cg-ek-hard { border-top: 3px dashed #f97316; }
+  .cg-ek-severed { border-top: 3px dotted var(--red); }
+  .cg-nk { width: 12px; height: 12px; flex-shrink: 0; border: 2px solid; }
+  .cg-nk-hub { background: rgba(96,165,250,0.25); border-color: #60a5fa; border-radius: 50%; }
+  .cg-nk-border { background: rgba(192,132,252,0.25); border-color: #c084fc; border-radius: 3px; }
+  .cg-row b { color: var(--text); font-weight: 500; }
+  .cg-card { background: #0d0d0f; border: 1px solid var(--border); padding: 6px; }
+  svg.cg-graph { width: 100%; height: auto; display: block; touch-action: manipulation; }
+  .cg-edge { stroke-linecap: round; transition: stroke-width 0.15s, opacity 0.15s; cursor: pointer; }
+  .cg-edge.open { stroke: var(--green); stroke-width: 2.4; }
+  .cg-edge.caution { stroke: var(--amber); stroke-width: 2.4; stroke-dasharray: 9 5; }
+  .cg-edge.hard { stroke: #f97316; stroke-width: 2.4; stroke-dasharray: 4 6; }
+  .cg-edge.severed { stroke: var(--red); stroke-width: 2.2; stroke-dasharray: 1.5 6; }
+  .cg-edge.dim { opacity: 0.12; }
+  .cg-edge.hot { stroke-width: 4.5; }
+  .cg-node-hit { cursor: pointer; }
+  .cg-dot { stroke-width: 2.5; transition: r 0.15s; }
+  .cg-dot.hub { fill: rgba(96,165,250,0.22); stroke: #60a5fa; }
+  .cg-dot.border { fill: rgba(192,132,252,0.18); stroke: #c084fc; }
+  .cg-dot.dim { opacity: 0.18; }
+  .cg-lbl { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 10px; fill: var(--text); pointer-events: none; font-weight: 500; }
+  .cg-lbl.border-lbl { fill: #d8b4fe; }
+  .cg-lbl.dim { opacity: 0.2; }
+  .cg-lbl-bg { fill: #0a0a0b; opacity: 0.55; pointer-events: none; }
+  .cg-lbl-bg.dim { opacity: 0.08; }
+  .cg-detail { background: var(--surface); border: 1px solid var(--border); margin-top: 12px; overflow: hidden; min-height: 56px; }
+  .cg-detail-empty { padding: 14px 16px; color: var(--text-muted); font-size: 11.5px; font-style: italic; }
+  .cg-detail-head { padding: 11px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .cg-dh-dot { width: 12px; height: 12px; border: 2px solid; flex-shrink: 0; }
+  .cg-detail-head h3 { font-family: 'Arial Narrow', 'Helvetica Neue', system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; letter-spacing: 0.03em; }
+  .cg-dh-type { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-left: auto; }
+  .cg-detail-body { padding: 10px 16px; }
+  .cg-conn { display: grid; grid-template-columns: 16px 1fr auto; gap: 9px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .cg-conn:last-child { border-bottom: none; }
+  .cg-conn-icon { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 12px; font-weight: 700; text-align: center; }
+  .cg-conn-to { font-size: 12px; color: var(--text); }
+  .cg-conn-to .cn-note { display: block; color: var(--text-muted); font-size: 10.5px; margin-top: 1px; line-height: 1.45; }
+  .cg-conn-status { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 8.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; white-space: nowrap; }
+  .cs-open { background: #052e16; color: #4ade80; }
+  .cs-caution { background: #2d2600; color: #fde047; }
+  .cs-hard { background: #2a1500; color: #fdba74; }
+  .cs-severed { background: #3b0d0d; color: #fca5a5; }
+  .cg-tip { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 8px; letter-spacing: 0.04em; }
+
+  /* ─── AIRPORT MAP ────────────────────────────────────── */
+  .ap-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: flex-start; margin-bottom: 12px; background: var(--surface2); border: 1px solid var(--border); padding: 12px 16px; }
+  .ap-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+  .ap-key { width: 12px; height: 12px; flex-shrink: 0; transform: rotate(45deg); border: 1.5px solid; }
+  .ap-key.open { background: rgba(34,197,94,0.25); border-color: #22c55e; }
+  .ap-key.partial { background: rgba(234,179,8,0.25); border-color: #eab308; }
+  .ap-key.isolated { background: rgba(249,115,22,0.25); border-color: #f97316; }
+  .ap-key.down { background: rgba(239,68,68,0.25); border-color: #ef4444; }
+  .ap-row b { color: var(--text); font-weight: 600; }
+  .ap-card { background: #0d0d0f; border: 1px solid var(--border); padding: 6px; }
+  svg.ap-graph { width: 100%; height: auto; display: block; max-width: 560px; margin: 0 auto; }
+  .ap-dot { stroke-width: 2; cursor: pointer; transition: opacity 0.15s; }
+  .ap-dot.open { fill: rgba(34,197,94,0.3); stroke: #22c55e; }
+  .ap-dot.partial { fill: rgba(234,179,8,0.3); stroke: #eab308; }
+  .ap-dot.isolated { fill: rgba(249,115,22,0.3); stroke: #f97316; }
+  .ap-dot.down { fill: rgba(239,68,68,0.3); stroke: #ef4444; }
+  .ap-node:hover .ap-dot { opacity: 0.7; }
+  .ap-lbl { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 10px; fill: var(--text); pointer-events: none; font-weight: 500; }
+  .ap-note { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--blue); padding: 11px 14px; margin-top: 12px; font-size: 11.5px; color: var(--text-dim); line-height: 1.6; }
+  .ap-note b { color: var(--text); font-weight: 600; }
+
+  /* ─── REMARKS / CONTACT ──────────────────────────────── */
+  .remarks-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    padding: 14px 18px;
+    margin-top: 4px;
+  }
+  .remarks-box h3 {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .remarks-box p {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .remarks-box a {
+    color: var(--blue);
+    font-weight: 600;
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .remarks-box a:hover { text-decoration: underline; }
+  .ap-detail { background: var(--surface); border: 1px solid var(--border2); padding: 11px 14px; margin-top: 12px; }
+
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    justify-content: space-between;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── RESPONSIVE ─────────────────────────────────────── */
+  @media (max-width: 680px) {
+    .metrics-grid  { grid-template-columns: 1fr 1fr; }
+    .week-grid     { grid-template-columns: 1fr 1fr; }
+    .risk-split    { grid-template-columns: 1fr; }
+    .log-row       { grid-template-columns: 72px 60px 1fr; }
+    .metric-num    { font-size: 32px; }
+  }
+  @media (max-width: 440px) {
+    .log-row { grid-template-columns: 1fr; gap: 3px; }
+    .container { padding: 14px 14px; }
+    .header { padding: 10px 14px; }
+    .day-counter { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div>
+    <div class="header-title"><span class="country">BOLIVIA</span> — MONITOR DE CRISIS</div>
+    <div class="header-meta">SOURCE: ABC / RED UNO / EL DEBER / EFE / INFOBAE / LA RAZÓN / LA PATRIA · COMPILED 30 MAY 2026</div>
+  </div>
+  <div class="header-right">
+    <div>
+      <div class="alert-pill">⚠ NIVEL DE ALERTA: CRÍTICO</div>
+    </div>
+    <div class="day-counter">
+      DÍA 30
+      <span>de protestas</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- LAST UPDATED — edit this stamp by hand each update -->
+  <div class="updated-banner">
+    <span class="ub-stamp">Última actualización: 30 de mayo de 2026, 08:00 BOT (hora de Bolivia)</span>
+    <span class="ub-note">Esto es una instantánea. El estado de las rutas y fronteras cambia a diario — verifique siempre localmente antes de viajar.</span>
+  </div>
+
+  <!-- KEY METRICS -->
+  <div>
+    <div class="sec-label">Situación Actual</div>
+    <div class="metrics-grid">
+      <div class="metric-card mc-red">
+        <div class="metric-num">93</div>
+        <div class="metric-label">Bloqueos Activos</div>
+        <div class="metric-sub">↑ récord — ABC 30 may · La Paz 22, Cbba 21, Oruro 19, Potosí 15</div>
+      </div>
+      <div class="metric-card mc-amber">
+        <div class="metric-num">5+</div>
+        <div class="metric-label">Muertes Atribuidas</div>
+        <div class="metric-sub">reservas de sangre "al límite" · El Alto pierde $6,5M/día</div>
+      </div>
+      <div class="metric-card" style="border-color:#16a34a;background:var(--surface);">
+        <div class="metric-num" style="color:#22c55e;font-size:28px;">ÓRDENES<br>ANULADAS</div>
+        <div class="metric-label">Diálogo Reabierto</div>
+        <div class="metric-sub">órdenes de aprehensión vs. líderes COB/Túpac Katari anuladas 29 may</div>
+      </div>
+      <div class="metric-card mc-blue">
+        <div class="metric-num" style="font-size:28px;">AMPLIADO</div>
+        <div class="metric-label">Asamblea Decisiva</div>
+        <div class="metric-sub">Sáb 14h00 La Paz: movilizados deciden continuar vs. negociar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESCALATION CHARTS -->
+  <div>
+    <div class="sec-label">Escalada de Bloqueos — Largo Plazo y Últimos 7 Días</div>
+    <div class="chart-wrap">
+      <div class="charts-grid">
+
+        <!-- WEEKLY (long-term) -->
+        <div class="chart-box">
+          <div class="chart-title">Pico semanal — crisis completa</div>
+          <div class="chart-subtitle">Mayor número de bloqueos activos por semana (1–30 may)</div>
+          <svg class="cx" viewBox="0 0 380 230" xmlns="http://www.w3.org/2000/svg" aria-label="Pico semanal de bloqueos">
+            <line x1="34" y1="188.0" x2="370" y2="188.0" class="cx-grid"/>
+            <text x="28" y="191.0" class="cx-yl">0</text>
+            <line x1="34" y1="144.5" x2="370" y2="144.5" class="cx-grid"/>
+            <text x="28" y="147.5" class="cx-yl">25</text>
+            <line x1="34" y1="101.0" x2="370" y2="101.0" class="cx-grid"/>
+            <text x="28" y="104.0" class="cx-yl">50</text>
+            <line x1="34" y1="57.5" x2="370" y2="57.5" class="cx-grid"/>
+            <text x="28" y="60.5" class="cx-yl">75</text>
+            <line x1="34" y1="14.0" x2="370" y2="14.0" class="cx-grid"/>
+            <text x="28" y="17.0" class="cx-yl">100</text>
+            <rect x="47.4" y="151.5" width="40.3" height="36.5" class="cx-bar" rx="1.5"/>
+            <text x="67.6" y="147.5" class="cx-val">21</text>
+            <text x="67.6" y="202.0" class="cx-xl">WK1</text>
+            <text x="67.6" y="213.0" class="cx-xl2">May 1–7</text>
+            <rect x="114.6" y="121.9" width="40.3" height="66.1" class="cx-bar" rx="1.5"/>
+            <text x="134.8" y="117.9" class="cx-val">38</text>
+            <text x="134.8" y="202.0" class="cx-xl">WK2</text>
+            <text x="134.8" y="213.0" class="cx-xl2">May 8–14</text>
+            <rect x="181.8" y="106.2" width="40.3" height="81.8" class="cx-bar" rx="1.5"/>
+            <text x="202.0" y="102.2" class="cx-val">47</text>
+            <text x="202.0" y="202.0" class="cx-xl">WK3</text>
+            <text x="202.0" y="213.0" class="cx-xl2">May 15–21</text>
+            <rect x="249.0" y="73.2" width="40.3" height="114.8" class="cx-bar" rx="1.5"/>
+            <text x="269.2" y="69.2" class="cx-val">66</text>
+            <text x="269.2" y="202.0" class="cx-xl">WK4</text>
+            <text x="269.2" y="213.0" class="cx-xl2">May 22–28</text>
+            <rect x="316.2" y="26.2" width="40.3" height="161.8" class="cx-bar peak" rx="1.5"/>
+            <text x="336.4" y="22.2" class="cx-val peak">93</text>
+            <text x="336.4" y="202.0" class="cx-xl">WK5</text>
+            <text x="336.4" y="213.0" class="cx-xl2">May 29–30</text>
+          </svg>
+        </div>
+
+        <!-- DAILY (last 7 days) -->
+        <div class="chart-box">
+          <div class="chart-title">Últimos 7 días — detalle diario</div>
+          <div class="chart-subtitle">Puntos de bloqueo activos reportados cada mañana (ABC)</div>
+          <svg class="cx" viewBox="0 0 380 230" xmlns="http://www.w3.org/2000/svg" aria-label="Bloqueos diarios, últimos 7 días">
+            <line x1="34" y1="188.0" x2="370" y2="188.0" class="cx-grid"/>
+            <text x="28" y="191.0" class="cx-yl">0</text>
+            <line x1="34" y1="144.5" x2="370" y2="144.5" class="cx-grid"/>
+            <text x="28" y="147.5" class="cx-yl">25</text>
+            <line x1="34" y1="101.0" x2="370" y2="101.0" class="cx-grid"/>
+            <text x="28" y="104.0" class="cx-yl">50</text>
+            <line x1="34" y1="57.5" x2="370" y2="57.5" class="cx-grid"/>
+            <text x="28" y="60.5" class="cx-yl">75</text>
+            <line x1="34" y1="14.0" x2="370" y2="14.0" class="cx-grid"/>
+            <text x="28" y="17.0" class="cx-yl">100</text>
+            <rect x="43.6" y="94.0" width="28.8" height="94.0" class="cx-bar" rx="1.5"/>
+            <text x="58.0" y="90.0" class="cx-val">54</text>
+            <text x="58.0" y="202.0" class="cx-xl">Sun 24</text>
+            <text x="58.0" y="213.0" class="cx-xl2">May 24</text>
+            <rect x="91.6" y="85.3" width="28.8" height="102.7" class="cx-bar" rx="1.5"/>
+            <text x="106.0" y="81.3" class="cx-val">59</text>
+            <text x="106.0" y="202.0" class="cx-xl">Mon 25</text>
+            <text x="106.0" y="213.0" class="cx-xl2">May 25</text>
+            <rect x="139.6" y="80.1" width="28.8" height="107.9" class="cx-bar" rx="1.5"/>
+            <text x="154.0" y="76.1" class="cx-val">62</text>
+            <text x="154.0" y="202.0" class="cx-xl">Tue 26</text>
+            <text x="154.0" y="213.0" class="cx-xl2">May 26</text>
+            <rect x="187.6" y="73.2" width="28.8" height="114.8" class="cx-bar" rx="1.5"/>
+            <text x="202.0" y="69.2" class="cx-val">66</text>
+            <text x="202.0" y="202.0" class="cx-xl">Wed 27</text>
+            <text x="202.0" y="213.0" class="cx-xl2">May 27</text>
+            <rect x="235.6" y="76.6" width="28.8" height="111.4" class="cx-bar" rx="1.5"/>
+            <text x="250.0" y="72.6" class="cx-val">64</text>
+            <text x="250.0" y="202.0" class="cx-xl">Thu 28</text>
+            <text x="250.0" y="213.0" class="cx-xl2">May 28</text>
+            <rect x="283.6" y="55.8" width="28.8" height="132.2" class="cx-bar" rx="1.5"/>
+            <text x="298.0" y="51.8" class="cx-val">76</text>
+            <text x="298.0" y="202.0" class="cx-xl">Fri 29</text>
+            <text x="298.0" y="213.0" class="cx-xl2">May 29</text>
+            <rect x="331.6" y="26.2" width="28.8" height="161.8" class="cx-bar peak" rx="1.5"/>
+            <text x="346.0" y="22.2" class="cx-val peak">93</text>
+            <text x="346.0" y="202.0" class="cx-xl">Sat 30</text>
+            <text x="346.0" y="213.0" class="cx-xl2">May 30</text>
+          </svg>
+        </div>
+
+      </div>
+      <div class="chart-note">
+        <b>Leyéndolos juntos:</b> el gráfico semanal (izquierda) muestra el ascenso de un mes, de ~21 a 93; el gráfico diario (derecha) amplía la última semana, donde la cifra siguió subiendo incluso al iniciarse los intentos de diálogo — el 28 de mayo bajó levemente (64) antes de saltar a un récord de 93 el 30 de mayo. Ambos ejes son número de bloqueos (0–100). Las cifras son reportes de la red vial fundamental de la ABC; no incluyen bloqueos locales/municipales.
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTIVITY GRAPH -->
+  <div>
+    <div class="sec-label">Conectividad de Rutas — Destinos Turísticos y Pasos Fronterizos</div>
+    <div class="cg-legend">
+      <div class="cg-legend-block">
+        <h4>Estado de ruta (líneas)</h4>
+        <div class="cg-row"><span class="cg-ek cg-ek-open"></span><span><b>Abierta</b> — transitable, tráfico normal/ligero</span></div>
+        <div class="cg-row"><span class="cg-ek cg-ek-caution"></span><span><b>Precaución</b> — parcial/intermitente; hay alternativas</span></div>
+        <div class="cg-row"><span class="cg-ek cg-ek-hard"></span><span><b>Bloqueo duro</b> — cortada; solo desvíos difíciles / a pie</span></div>
+        <div class="cg-row"><span class="cg-ek cg-ek-severed"></span><span><b>Sin conexión</b> — sin enlace vial viable ahora</span></div>
+      </div>
+      <div class="cg-legend-block">
+        <h4>Ubicaciones (nodos)</h4>
+        <div class="cg-row"><span class="cg-nk cg-nk-hub"></span><span><b>Destino turístico</b></span></div>
+        <div class="cg-row"><span class="cg-nk cg-nk-border"></span><span><b>Paso fronterizo</b> — la bandera 🇵🇪🇨🇱🇦🇷🇧🇷🇵🇾 indica el país de destino</span></div>
+        <div class="cg-row" style="color:var(--text-muted);font-size:10px;margin-top:2px;">Toque un nodo para aislar sus rutas ↓</div>
+      </div>
+    </div>
+    <div class="cg-card">
+      <svg class="cg-graph" id="cgGraph" viewBox="0 0 860 760" xmlns="http://www.w3.org/2000/svg" aria-label="Grafo de conectividad de destinos turísticos y pasos fronterizos de Bolivia">
+        <!-- Static fallback: rendered server-side so the graph shows even without JS. JS enhances with interactivity. -->
+        <line class="cg-edge hard" x1="140" y1="360" x2="150" y2="402" data-a="La Paz" data-b="Patacamaya"/>
+        <line class="cg-edge hard" x1="150" y1="402" x2="199" y2="440" data-a="Patacamaya" data-b="Oruro"/>
+        <line class="cg-edge severed" x1="140" y1="360" x2="199" y2="440" data-a="La Paz" data-b="Oruro"/>
+        <line class="cg-edge hard" x1="199" y1="440" x2="262" y2="408" data-a="Oruro" data-b="Cochabamba"/>
+        <line class="cg-edge hard" x1="140" y1="360" x2="66" y2="330" data-a="La Paz" data-b="Copacabana"/>
+        <line class="cg-edge caution" x1="140" y1="360" x2="104" y2="305" data-a="La Paz" data-b="Sorata"/>
+        <line class="cg-edge caution" x1="140" y1="360" x2="175" y2="250" data-a="La Paz" data-b="Rurrenabaque"/>
+        <line class="cg-edge hard" x1="262" y1="408" x2="455" y2="432" data-a="Cochabamba" data-b="Santa Cruz"/>
+        <line class="cg-edge hard" x1="262" y1="408" x2="322" y2="500" data-a="Cochabamba" data-b="Sucre"/>
+        <line class="cg-edge caution" x1="199" y1="440" x2="212" y2="575" data-a="Oruro" data-b="Uyuni"/>
+        <line class="cg-edge hard" x1="288" y1="528" x2="199" y2="440" data-a="Potosí" data-b="Oruro"/>
+        <line class="cg-edge caution" x1="288" y1="528" x2="212" y2="575" data-a="Potosí" data-b="Uyuni"/>
+        <line class="cg-edge hard" x1="288" y1="528" x2="322" y2="500" data-a="Potosí" data-b="Sucre"/>
+        <line class="cg-edge caution" x1="288" y1="528" x2="292" y2="628" data-a="Potosí" data-b="Tupiza"/>
+        <line class="cg-edge caution" x1="212" y1="575" x2="292" y2="628" data-a="Uyuni" data-b="Tupiza"/>
+        <line class="cg-edge hard" x1="292" y1="628" x2="300" y2="672" data-a="Tupiza" data-b="Villazón"/>
+        <line class="cg-edge caution" x1="212" y1="575" x2="138" y2="605" data-a="Uyuni" data-b="Ollagüe"/>
+        <line class="cg-edge caution" x1="212" y1="575" x2="165" y2="695" data-a="Uyuni" data-b="Hito Cajón"/>
+        <line class="cg-edge severed" x1="288" y1="528" x2="104" y2="510" data-a="Potosí" data-b="Pisiga"/>
+        <line class="cg-edge caution" x1="322" y1="500" x2="455" y2="432" data-a="Sucre" data-b="Santa Cruz"/>
+        <line class="cg-edge caution" x1="455" y1="432" x2="410" y2="458" data-a="Santa Cruz" data-b="Samaipata"/>
+        <line class="cg-edge open" x1="455" y1="432" x2="424" y2="410" data-a="Santa Cruz" data-b="Buena Vista"/>
+        <line class="cg-edge caution" x1="410" y1="458" x2="322" y2="500" data-a="Samaipata" data-b="Sucre"/>
+        <line class="cg-edge open" x1="455" y1="432" x2="434" y2="660" data-a="Santa Cruz" data-b="Yacuiba"/>
+        <line class="cg-edge open" x1="455" y1="432" x2="800" y2="470" data-a="Santa Cruz" data-b="Puerto Suárez"/>
+        <line class="cg-edge open" x1="455" y1="432" x2="740" y2="360" data-a="Santa Cruz" data-b="San Matías"/>
+        <line class="cg-edge open" x1="455" y1="432" x2="495" y2="668" data-a="Santa Cruz" data-b="Cañada Oruro"/>
+        <line class="cg-edge severed" x1="424" y1="410" x2="175" y2="250" data-a="Buena Vista" data-b="Rurrenabaque"/>
+        <line class="cg-edge open" x1="66" y1="330" x2="40" y2="342" data-a="Copacabana" data-b="Kasani"/>
+        <line class="cg-edge hard" x1="66" y1="330" x2="62" y2="378" data-a="Copacabana" data-b="Desaguadero"/>
+        <line class="cg-edge hard" x1="140" y1="360" x2="62" y2="378" data-a="La Paz" data-b="Desaguadero"/>
+        <line class="cg-edge caution" x1="104" y1="305" x2="60" y2="300" data-a="Sorata" data-b="Puerto Acosta"/>
+        <line class="cg-edge hard" x1="199" y1="440" x2="86" y2="458" data-a="Oruro" data-b="Tambo Quemado"/>
+        <line class="cg-edge hard" x1="199" y1="440" x2="104" y2="510" data-a="Oruro" data-b="Pisiga"/>
+        <line class="cg-edge caution" x1="292" y1="628" x2="388" y2="700" data-a="Tupiza" data-b="Bermejo"/>
+        <line class="cg-edge severed" x1="175" y1="250" x2="315" y2="70" data-a="Rurrenabaque" data-b="Guayaramerín"/>
+        <line class="cg-edge severed" x1="175" y1="250" x2="95" y2="80" data-a="Rurrenabaque" data-b="Cobija"/>
+        <line class="cg-edge open" x1="434" y1="660" x2="495" y2="668" data-a="Yacuiba" data-b="Cañada Oruro"/>
+        <g class="cg-node-hit" data-name="La Paz">
+          <circle class="cg-dot hub" cx="140" cy="360" r="7"/>
+          <text class="cg-lbl" x="150" y="363.5">La Paz</text>
+        </g>
+        <g class="cg-node-hit" data-name="Copacabana">
+          <circle class="cg-dot hub" cx="66" cy="330" r="7"/>
+          <text class="cg-lbl" x="56" y="333.5" text-anchor="end">Copacabana</text>
+        </g>
+        <g class="cg-node-hit" data-name="Sorata">
+          <circle class="cg-dot hub" cx="104" cy="305" r="7"/>
+          <text class="cg-lbl" x="114" y="308.5">Sorata</text>
+        </g>
+        <g class="cg-node-hit" data-name="Oruro">
+          <circle class="cg-dot hub" cx="199" cy="440" r="7"/>
+          <text class="cg-lbl" x="209" y="443.5">Oruro</text>
+        </g>
+        <g class="cg-node-hit" data-name="Patacamaya">
+          <circle class="cg-dot hub" cx="150" cy="402" r="7"/>
+          <text class="cg-lbl" x="160" y="405.5">Patacamaya</text>
+        </g>
+        <g class="cg-node-hit" data-name="Cochabamba">
+          <circle class="cg-dot hub" cx="262" cy="408" r="7"/>
+          <text class="cg-lbl" x="272" y="411.5">Cochabamba</text>
+        </g>
+        <g class="cg-node-hit" data-name="Sucre">
+          <circle class="cg-dot hub" cx="322" cy="500" r="7"/>
+          <text class="cg-lbl" x="332" y="503.5">Sucre</text>
+        </g>
+        <g class="cg-node-hit" data-name="Potosí">
+          <circle class="cg-dot hub" cx="288" cy="528" r="7"/>
+          <text class="cg-lbl" x="298" y="531.5">Potosí</text>
+        </g>
+        <g class="cg-node-hit" data-name="Uyuni">
+          <circle class="cg-dot hub" cx="212" cy="575" r="7"/>
+          <text class="cg-lbl" x="222" y="578.5">Uyuni</text>
+        </g>
+        <g class="cg-node-hit" data-name="Tupiza">
+          <circle class="cg-dot hub" cx="292" cy="628" r="7"/>
+          <text class="cg-lbl" x="302" y="631.5">Tupiza</text>
+        </g>
+        <g class="cg-node-hit" data-name="Santa Cruz">
+          <circle class="cg-dot hub" cx="455" cy="432" r="7"/>
+          <text class="cg-lbl" x="465" y="435.5">Santa Cruz</text>
+        </g>
+        <g class="cg-node-hit" data-name="Samaipata">
+          <circle class="cg-dot hub" cx="410" cy="458" r="7"/>
+          <text class="cg-lbl" x="420" y="461.5">Samaipata</text>
+        </g>
+        <g class="cg-node-hit" data-name="Buena Vista">
+          <circle class="cg-dot hub" cx="424" cy="410" r="7"/>
+          <text class="cg-lbl" x="434" y="413.5">Buena Vista</text>
+        </g>
+        <g class="cg-node-hit" data-name="Rurrenabaque">
+          <circle class="cg-dot hub" cx="175" cy="250" r="7"/>
+          <text class="cg-lbl" x="185" y="253.5">Rurrenabaque</text>
+        </g>
+        <g class="cg-node-hit" data-name="Kasani">
+          <circle class="cg-dot border" cx="40" cy="342" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="31" y="345.5" text-anchor="end">🇵🇪 Kasani</text>
+        </g>
+        <g class="cg-node-hit" data-name="Desaguadero">
+          <circle class="cg-dot border" cx="62" cy="378" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="53" y="381.5" text-anchor="end">🇵🇪 Desaguadero</text>
+        </g>
+        <g class="cg-node-hit" data-name="Puerto Acosta">
+          <circle class="cg-dot border" cx="60" cy="300" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="51" y="303.5" text-anchor="end">🇵🇪 Puerto Acosta</text>
+        </g>
+        <g class="cg-node-hit" data-name="Tambo Quemado">
+          <circle class="cg-dot border" cx="86" cy="458" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="77" y="461.5" text-anchor="end">🇨🇱 Tambo Quemado</text>
+        </g>
+        <g class="cg-node-hit" data-name="Pisiga">
+          <circle class="cg-dot border" cx="104" cy="510" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="95" y="513.5" text-anchor="end">🇨🇱 Pisiga</text>
+        </g>
+        <g class="cg-node-hit" data-name="Ollagüe">
+          <circle class="cg-dot border" cx="138" cy="605" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="129" y="608.5" text-anchor="end">🇨🇱 Ollagüe</text>
+        </g>
+        <g class="cg-node-hit" data-name="Hito Cajón">
+          <circle class="cg-dot border" cx="165" cy="695" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="174" y="698.5">Hito Cajón 🇨🇱</text>
+        </g>
+        <g class="cg-node-hit" data-name="Villazón">
+          <circle class="cg-dot border" cx="300" cy="672" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="309" y="675.5">Villazón 🇦🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Bermejo">
+          <circle class="cg-dot border" cx="388" cy="700" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="397" y="703.5">Bermejo 🇦🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Yacuiba">
+          <circle class="cg-dot border" cx="434" cy="660" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="443" y="663.5">Yacuiba 🇦🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Puerto Suárez">
+          <circle class="cg-dot border" cx="800" cy="470" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="809" y="473.5">Puerto Suárez 🇧🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Guayaramerín">
+          <circle class="cg-dot border" cx="315" cy="70" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="324" y="73.5">Guayaramerín 🇧🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Cobija">
+          <circle class="cg-dot border" cx="95" cy="80" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="86" y="83.5" text-anchor="end">🇧🇷 Cobija</text>
+        </g>
+        <g class="cg-node-hit" data-name="San Matías">
+          <circle class="cg-dot border" cx="740" cy="360" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="749" y="363.5">San Matías 🇧🇷</text>
+        </g>
+        <g class="cg-node-hit" data-name="Cañada Oruro">
+          <circle class="cg-dot border" cx="495" cy="668" r="5.5"/>
+          <text class="cg-lbl border-lbl" x="504" y="671.5">Cañada Oruro 🇵🇾</text>
+        </g>
+      </svg>
+    </div>
+    <div class="cg-detail" id="cgDetail">
+      <div class="cg-detail-empty">Toque una ubicación para ver el estado ruta por ruta, o toque una línea para esa conexión específica. (La severidad refleja datos ABC del 29–30 de mayo y puede cambiar en horas.)</div>
+    </div>
+    <div class="cg-tip">Disposición geográfica (aproximada). Oeste = altiplano (izquierda), Este = tierras bajas (derecha). Toque el fondo para reiniciar.</div>
+  </div>
+
+  <!-- AIRPORT STATUS MAP -->
+  <div>
+    <div class="sec-label">Estado de Aeropuertos — Operación y Acceso por Carretera</div>
+    <div class="ap-legend">
+      <div class="ap-row"><span class="ap-key open"></span><span><b>Operativo + accesible</b> por carretera</span></div>
+      <div class="ap-row"><span class="ap-key partial"></span><span><b>Operativo</b>, pero con cierres viales parciales</span></div>
+      <div class="ap-row"><span class="ap-key isolated"></span><span><b>Operativo</b>, pero inaccesible por carretera</span></div>
+      <div class="ap-row"><span class="ap-key down"></span><span><b>Aeropuerto no operativo</b></span></div>
+    </div>
+    <div class="ap-card">
+      <svg class="ap-graph" id="apGraph" viewBox="0 0 860 760" xmlns="http://www.w3.org/2000/svg" aria-label="Mapa de aeropuertos de Bolivia codificados por color según operación y acceso por carretera">
+        <!-- Static airport map: rendered in markup so it shows without JS. -->
+        <g class="ap-node" data-name="El Alto (La Paz)" data-status="partial" data-note="Vía de acceso bloqueada de forma intermitente; pasajeros han tenido que caminar ~3 km. Los vuelos operan.">
+          <rect class="ap-dot partial" x="132" y="386" width="10" height="10" transform="rotate(45 137 391)"/>
+          <text class="ap-lbl" x="147" y="394">La Paz</text>
+        </g>
+        <g class="ap-node" data-name="Jorge Wilstermann (Cochabamba)" data-status="partial" data-note="Aeropuerto operativo; la ciudad de Cochabamba está cercada por bloqueos intensos.">
+          <rect class="ap-dot partial" x="260" y="433" width="10" height="10" transform="rotate(45 265 438)"/>
+          <text class="ap-lbl" x="275" y="441">Cochabamba</text>
+        </g>
+        <g class="ap-node" data-name="Viru Viru (Santa Cruz)" data-status="open" data-note="Principal centro internacional. Totalmente operativo y accesible por carretera.">
+          <rect class="ap-dot open" x="454" y="445" width="10" height="10" transform="rotate(45 459 450)"/>
+          <text class="ap-lbl" x="469" y="453">Santa Cruz</text>
+        </g>
+        <g class="ap-node" data-name="Alcantarí (Sucre)" data-status="open" data-note="Operativo; el acceso por Chuquisaca es más leve que el del altiplano.">
+          <rect class="ap-dot open" x="326" y="527" width="10" height="10" transform="rotate(45 331 532)"/>
+          <text class="ap-lbl" x="341" y="535">Sucre</text>
+        </g>
+        <g class="ap-node" data-name="Oriel Lea Plaza (Tarija)" data-status="open" data-note="Operativo; la región de Tarija no tiene bloqueos viales.">
+          <rect class="ap-dot open" x="355" y="646" width="10" height="10" transform="rotate(45 360 651)"/>
+          <text class="ap-lbl" x="370" y="654">Tarija</text>
+        </g>
+        <g class="ap-node" data-name="Joya Andina (Uyuni)" data-status="open" data-note="Operativo; puerta de entrada al salar.">
+          <rect class="ap-dot open" x="218" y="589" width="10" height="10" transform="rotate(45 223 594)"/>
+          <text class="ap-lbl" x="233" y="597">Uyuni</text>
+        </g>
+        <g class="ap-node" data-name="Jorge Henrich (Trinidad)" data-status="open" data-note="Operativo; Beni (declaró emergencia humanitaria, pero el aeropuerto funciona).">
+          <rect class="ap-dot open" x="341" y="299" width="10" height="10" transform="rotate(45 346 304)"/>
+          <text class="ap-lbl" x="356" y="307">Trinidad</text>
+        </g>
+        <g class="ap-node" data-name="Aníbal Arab (Cobija)" data-status="open" data-note="Operativo; Pando, extremo norte.">
+          <rect class="ap-dot open" x="94" y="104" width="10" height="10" transform="rotate(45 99 109)"/>
+          <text class="ap-lbl" x="89" y="112" text-anchor="end">Cobija</text>
+        </g>
+        <g class="ap-node" data-name="Juan Mendoza (Oruro)" data-status="isolated" data-note="Aeropuerto menor; Oruro está fuertemente bloqueado por carretera, así que en la práctica solo se alcanza por aire.">
+          <rect class="ap-dot isolated" x="203" y="461" width="10" height="10" transform="rotate(45 208 466)"/>
+          <text class="ap-lbl" x="198" y="469" text-anchor="end">Oruro</text>
+        </g>
+        <g class="ap-node" data-name="Nicolás Rojas (Potosí)" data-status="isolated" data-note="Aeropuerto menor; los accesos a Potosí están muy cortados.">
+          <rect class="ap-dot isolated" x="289" y="542" width="10" height="10" transform="rotate(45 294 547)"/>
+          <text class="ap-lbl" x="304" y="550">Potosí</text>
+        </g>
+      </svg>
+    </div>
+    <div class="ap-detail" id="apDetail" style="display:none"></div>
+    <div class="ap-note">
+      <b>Lo esencial para viajeros:</b> el espacio aéreo boliviano y los aeropuertos están operando — el problema son las <i>carreteras de acceso</i>. Volar entre ciudades es ahora la única forma fiable de moverse por el país. El detalle es la vía de acceso: <b>El Alto (La Paz)</b> ha sido bloqueado repetidamente, obligando a los pasajeros a caminar los últimos kilómetros, así que prevea amplios márgenes de tiempo. <b>Viru Viru (Santa Cruz)</b> es el centro más confiable. Oruro y Potosí tienen aeropuertos pero son menores y, dados los bloqueos circundantes, prácticamente solo se alcanzan por aire. Reconfirme siempre su vuelo <i>y</i> la vía de acceso al aeropuerto el mismo día del viaje.
+    </div>
+  </div>
+
+  <!-- 4-WEEK TIMELINE -->
+  <div>
+    <div class="sec-label">Desglose Semana por Semana</div>
+    <div class="week-grid">
+
+      <!-- Week 1 -->
+      <div class="week-card">
+        <div class="wk-header">
+          <div class="wk-num">Semana 1</div>
+          <div class="wk-dates">1–7 may 2026</div>
+          <div class="wk-peak" style="color: #f59e0b;">21 <span class="wk-peak-label">pico de bloqueos</span></div>
+        </div>
+        <div class="wk-sev wks1"></div>
+        <div class="wk-body">
+          <div class="wk-evt">La COB lanza paro general indefinido (1 may)</div>
+          <div class="wk-evt">Demandas: aumento salarial del 20%, reforma de pensiones, precios del combustible</div>
+          <div class="wk-evt">Sindicatos del transporte se suman a los bloqueos en La Paz y El Alto</div>
+          <div class="wk-evt">Tupiza: paro local del transporte de 24 h (5 may)</div>
+          <div class="wk-evt">La ABC reporta los primeros cierres viales generalizados (6–7 may)</div>
+        </div>
+      </div>
+
+      <!-- Week 2 -->
+      <div class="week-card">
+        <div class="wk-header">
+          <div class="wk-num">Semana 2</div>
+          <div class="wk-dates">8–14 may 2026</div>
+          <div class="wk-peak" style="color: #f97316;">38 <span class="wk-peak-label">pico de bloqueos</span></div>
+        </div>
+        <div class="wk-sev wks2"></div>
+        <div class="wk-body">
+          <div class="wk-evt e-death">La turista Anna Enns (Belice, 56) muere en Desaguadero — ambulancia bloqueada (13 may)</div>
+          <div class="wk-evt e-death">2ª mujer muere, ambulancia bloqueada cerca de Guanay (13 may)</div>
+          <div class="wk-evt e-death">Joven de 20 años muere, El Alto — ambulancia retrasada 3 h (14 may)</div>
+          <div class="wk-evt e-warn">Embajada de EE.UU.: "NO viaje por carretera entre ciudades" (14 may)</div>
+          <div class="wk-evt">El Gobierno deroga la Ley 1720 — pero las demandas pasan a exigir la renuncia</div>
+        </div>
+      </div>
+
+      <!-- Week 3 -->
+      <div class="week-card">
+        <div class="wk-header">
+          <div class="wk-num">Semana 3</div>
+          <div class="wk-dates">15–21 may 2026</div>
+          <div class="wk-peak" style="color: #ef4444;">47 <span class="wk-peak-label">pico de bloqueos</span></div>
+        </div>
+        <div class="wk-sev wks3"></div>
+        <div class="wk-body">
+          <div class="wk-evt e-warn">Operativo militar "Corredor Humanitario": 2.500 policías + 1.000 militares desplegados (16 may)</div>
+          <div class="wk-evt e-warn">Bancos cierran sucursales en La Paz (riesgo de seguridad, 19 may)</div>
+          <div class="wk-evt e-warn">18 may — peor violencia: explosivos, patrulla quemada, transeúntes agredidos</div>
+          <div class="wk-evt">15 periodistas agredidos, 4 equipos de cámara atacados (19 may)</div>
+          <div class="wk-evt e-death">Niño de 12 años muere, ambulancia bloqueada (21 may)</div>
+          <div class="wk-evt">Escasez de combustible y alimentos se extiende en La Paz</div>
+        </div>
+      </div>
+
+      <!-- Week 4 -->
+      <div class="week-card w4-update">
+        <div class="wk-header">
+          <div class="wk-num">Semana 4 ▲ ACTUALIZADO 29 MAY</div>
+          <div class="wk-dates">22–29 may 2026 (en curso)</div>
+          <div class="wk-peak" style="color: var(--amber);">64 <span class="wk-peak-label">ABC 28 may · La Paz 22, Potosí 15, Cbba 11, Oruro 10, Chuq 3, SCZ 3 · pico de 66 el 27 may</span></div>
+        </div>
+        <div class="wk-sev wks4"></div>
+        <div class="wk-body">
+          <div class="wk-evt e-warn">Paz promulga la ley militar el 27 may. El estado de excepción AÚN no se declara — el Gobierno lo llama "un instrumento más, evaluado según necesidad" (28 may)</div>
+          <div class="wk-evt e-warn"><b style="color:var(--red)">2º diálogo (28 may, Conferencia Episcopal) FRACASA</b> — los líderes Argollo (COB) y Salazar (Túpac Katari) vuelven a ausentarse, pese a las garantías del Gobierno contra su detención</div>
+          <div class="wk-evt e-warn">La COB condiciona su asistencia a la anulación de las órdenes de aprehensión; Argollo acusado de "instigación y terrorismo". Paz advierte que esta era la invitación "por última vez"</div>
+          <div class="wk-evt e-warn">Los movilizados convocan un <i>cabildo</i> nacional (asamblea popular) para decidir si continúan — resultado pendiente</div>
+          <div class="wk-evt e-death">Colegio Médico: reservas de sangre "al límite". El Alto pierde $6,5M/día. Hospitales con escasez crítica de oxígeno y medicinas</div>
+          <div class="wk-evt"><b style="color:var(--amber)">Potosí mantiene 15 puntos de bloqueo</b> — afecta directamente al corredor Tupiza–Uyuni</div>
+          <div class="wk-evt">Los choferes del transporte público inician su propio "paro indefinido" (2º día el 28 may) por compensación de combustible — demanda aparte que suma a la parálisis</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INCIDENT LOG -->
+  <div>
+    <div class="sec-label">Registro de Incidentes Críticos</div>
+    <div class="log-wrap">
+      <div class="log-row">
+        <div class="log-date">1 may 2026</div>
+        <div><span class="log-tag lt-spread">ESCALADA</span></div>
+        <div class="log-desc"><b>La COB anuncia paro general indefinido.</b> Los sindicatos del transporte se suman de inmediato. Comienzan los bloqueos en el perímetro de La Paz y El Alto. Las demandas son inicialmente económicas.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">6 may 2026</div>
+        <div><span class="log-tag lt-spread">EXPANSIÓN</span></div>
+        <div class="log-desc"><b>La ABC (Administradora de Carreteras) reporta 21 bloqueos</b> en la red vial nacional. La carretera La Paz–Oruro queda parcialmente bloqueada en Patacamaya y Viacha.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">11 may 2026</div>
+        <div><span class="log-tag lt-spread">EXPANSIÓN</span></div>
+        <div class="log-desc"><b>38 puntos de bloqueo</b> reportados por la ABI en 6 departamentos simultáneamente. Rutas a Boyuibe, San Julián y Abapó (Santa Cruz) bloqueadas por primera vez. Cientos de camiones varados.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">13 may 2026</div>
+        <div><span class="log-tag lt-tourist">TURISTA</span></div>
+        <div class="log-desc"><b>Anna Enns, 56, turista de Belice, muere en la frontera de Desaguadero.</b> <span class="hi-red">La ambulancia no pudo llegar al hospital por el bloqueo.</span> Es la primera muerte de turista confirmada atribuida directamente a los bloqueos.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">13 may 2026</div>
+        <div><span class="log-tag lt-death">MUERTES ×2</span></div>
+        <div class="log-desc">Una segunda mujer (40) muere en una ambulancia cerca de Guanay. Una tercera víctima (de 20 años, El Alto) se reporta al día siguiente. Las tres muertes por acceso de emergencia bloqueado. Comienza la indignación internacional.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">14 may 2026</div>
+        <div><span class="log-tag lt-tourist">TURISTA</span></div>
+        <div class="log-desc"><b>Alerta de Seguridad de la Embajada de EE.UU.:</b> <span class="hi">"No viaje por carretera entre ciudades. Conductores que intentaron pasar los bloqueos han reportado <b>violencia, agresiones físicas y daños a vehículos</b>."</span> El gremio turístico confirma turistas varados por todo el país. Las pérdidas diarias del sector superan los USD 720.000.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">16 may 2026</div>
+        <div><span class="log-tag lt-military">MILITAR</span></div>
+        <div class="log-desc">El Gobierno despliega <b>2.500 policías + 1.000 militares</b> (operativo "Corredor Humanitario") para intentar despejar las rutas. El convoy avanza parcialmente pero no abre del todo el corredor La Paz–Oruro.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">18 may 2026</div>
+        <div><span class="log-tag lt-violence">VIOLENCIA</span></div>
+        <div class="log-desc"><b>El día más violento de la crisis:</b> tres marchas convergentes se enfrentan a la policía en La Paz. <span class="hi-red">Uso de explosivos caseros, patrulla quemada, estación de teleférico atacada, oficinas públicas saqueadas, transeúntes agredidos.</span> Los bancos cierran sucursales por riesgos de seguridad.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">19 may 2026</div>
+        <div><span class="log-tag lt-violence">PRENSA</span></div>
+        <div class="log-desc"><b>15 periodistas y 4 equipos de cámara agredidos</b> en una semana, según la Defensoría del Pueblo. YPFB suspende la entrega de combustible por el bloqueo de su planta de Senkata. Comienza la escasez de alimentos en La Paz (carne, pollo).</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">21 may 2026</div>
+        <div><span class="log-tag lt-death">MUERTE</span></div>
+        <div class="log-desc"><b>4ª muerte: un niño de 12 años</b> muere tras ser bloqueada su ambulancia más de 3 horas. Comienzan las contramarchas: ciudadanos en La Paz, Cochabamba, Santa Cruz y Trinidad exigen pacificación.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">23 may 2026</div>
+        <div><span class="log-tag lt-violence">VIOLENCIA</span></div>
+        <div class="log-desc"><b>Segundo convoy humanitario atacado.</b> Columna de 150 vehículos (policía, militares, camiones civiles) apedreada y atacada con explosivos caseros. Vehículos quemados en Copata, Achica Arriba y Vilaque. <b>57 personas detenidas.</b> El convoy se ve obligado a retroceder.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">24 may 2026</div>
+        <div><span class="log-tag lt-spread">PICO</span></div>
+        <div class="log-desc"><b>59 puntos de bloqueo</b> — la mayor cifra de la crisis, en 6 de 9 departamentos. El Senado vota derogar la Ley de Estados de Excepción, limitando las herramientas del Gobierno para responder a la crisis.</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">25 may 2026</div>
+        <div><span class="log-tag lt-spread">SEM4 DÍA 4</span></div>
+        <div class="log-desc">Quedan 58 puntos de bloqueo. <b>Manifestantes intentan bloquear el acceso al aeropuerto internacional de El Alto.</b> No se logra diálogo — la reunión prevista con dirigentes campesinos se cancela tras el fracaso del convoy del domingo. La policía confirma la ruta Potosí–Tupiza abierta (por la noche).</div>
+      </div>
+      <div class="log-row">
+        <div class="log-date">26 may 2026</div>
+        <div><span class="log-tag lt-tourist">REPORTE EN TERRENO</span></div>
+        <div class="log-desc"><b>Se reporta la ruta Potosí–Tupiza bloqueada hacia las 00h30,</b> <span class="hi-red">contradiciendo el reporte policial de la noche anterior.</span> Esto ilustra el problema de fondo: las condiciones cambian en horas y ningún reporte oficial es del todo confiable.</div>
+      </div>
+      <div class="log-row" style="background: #0f0d00; border-left: 2px solid var(--amber);">
+        <div class="log-date">26 may 2026</div>
+        <div><span class="log-tag lt-spread">NUEVO PICO</span></div>
+        <div class="log-desc"><b>62 puntos de bloqueo</b> — nuevo máximo histórico, según la ABC. Sube desde 54 en 24 horas. Potosí: 10 bloqueos específicos listados, incluido Yocalla–Tarapaya (en el corredor a Uyuni). <b>La terminal de buses de Uyuni confirma 3 semanas consecutivas de suspensión parcial del servicio.</b></div>
+      </div>
+      <div class="log-row" style="background: #0f0d00; border-left: 2px solid var(--amber);">
+        <div class="log-date">26–27 may 2026</div>
+        <div><span class="log-tag lt-military">PROMULGADA</span></div>
+        <div class="log-desc"><b>El presidente Paz firma y promulga la abrogación de la Ley 1341</b> — publicada en la Gaceta Oficial horas después de su aprobación en el Congreso. Las Fuerzas Armadas pueden ahora intervenir en conflictos civiles sin condiciones previas. El Gobierno insiste en que el estado de excepción sigue siendo el "último recurso". Analistas advierten que el precedente de 2000 muestra que tales medidas pueden <span class="hi-red">fortalecer, no disolver, los movimientos de protesta</span>.</div>
+      </div>
+      <div class="log-row" style="background: #061206; border-left: 2px solid var(--green);">
+        <div class="log-date">27 may 2026</div>
+        <div><span class="log-tag lt-spread" style="background:#052e16;color:#86efac">DIÁLOGO</span></div>
+        <div class="log-desc"><b>Primera sesión formal de diálogo</b> en la Vicepresidencia de Bolivia, convocada por el vicepresidente Edmand Lara (él mismo opositor de Paz). Presentes: ministros, la Iglesia, la Defensoría del Pueblo, algunos sectores sociales. <span class="hi-red">Ausentes: la COB, dirigentes campesinos de La Paz, maestros rurales</span> — muchos con órdenes de aprehensión. <b>Único acuerdo: el Gobierno garantizará el paso seguro de los dirigentes a la próxima sesión.</b> Reunión de seguimiento fijada para el jueves 28 may, Seminario San Jerónimo, La Paz. Los bloqueos continúan sin interrupción.</div>
+      </div>
+      <div class="log-row" style="background: #0f0d00; border-left: 2px solid var(--amber);">
+        <div class="log-date">27 may 2026</div>
+        <div><span class="log-tag lt-spread">NUEVO PICO</span></div>
+        <div class="log-desc"><b>66 puntos de bloqueo — nuevo récord</b> según la ABC. Distribución: <b>La Paz 21 · Potosí 14 · Cochabamba 12 · Oruro 11 · Chuquisaca 4 · Santa Cruz 3.</b> La Jornada (México) reporta hasta <b>150 puntos</b> al contar caminos municipales y locales además de la red nacional. El salto de Potosí de 10 a 14 es directamente relevante para el corredor turístico Tupiza–Uyuni.</div>
+      </div>
+      <div class="log-row" style="background: #100600; border-left: 2px solid var(--red);">
+        <div class="log-date">28 may 2026</div>
+        <div><span class="log-tag lt-violence">DIÁLOGO FRACASA</span></div>
+        <div class="log-desc"><b>La segunda sesión de diálogo se desploma.</b> Convocada por la Conferencia Episcopal Boliviana, la reunión transcurrió de nuevo <span class="hi-red">sin los dos dirigentes clave</span> — Mario Argollo (COB) y Vicente Salazar (Túpac Katari) — pese a las garantías del Gobierno de que no serían detenidos. La COB condiciona su asistencia a la <b>anulación de las órdenes de aprehensión</b> (Argollo enfrenta cargos de "instigación y terrorismo"). El presidente Paz había advertido que los invitaba <span class="hi-red">"por última vez".</span> Los mediadores buscan ahora un levantamiento formal de las órdenes.</div>
+      </div>
+      <div class="log-row" style="background: #100600; border-left: 2px solid var(--red);">
+        <div class="log-date">28 may 2026</div>
+        <div><span class="log-tag lt-spread">CABILDO</span></div>
+        <div class="log-desc">En respuesta, las bases de la COB y Túpac Katari convocan un <b><i>cabildo</i> nacional</b> (asamblea popular masiva) para decidir si continúan la movilización — lo que anticipa un endurecimiento más que una solución. <b>64 bloqueos</b> activos (La Paz 22, Potosí 15). Los choferes del transporte público suman un "paro indefinido" aparte, ya en su 2º día, por compensación de la calidad del combustible.</div>
+      </div>
+      <div class="log-row" style="background: #100600; border-left: 2px solid var(--red);">
+        <div class="log-date">28 may 2026</div>
+        <div><span class="log-tag lt-death">SALUD</span></div>
+        <div class="log-desc"><b>La situación humanitaria se deteriora drásticamente.</b> El Colegio Médico reporta que <span class="hi-red">las reservas de sangre están "al límite".</span> Los hospitales enfrentan escasez crítica de oxígeno y medicinas. La Alcaldía de El Alto estima pérdidas diarias de <b>$6,5 millones.</b> El Gobierno dice que el estado de excepción sigue siendo "un instrumento a evaluar según oportunidad y necesidad" — ni descartado ni confirmado.</div>
+      </div>
+      <div class="log-row" style="background: #061206; border-left: 2px solid var(--open);">
+        <div class="log-date">29 may 2026</div>
+        <div><span class="log-tag lt-spread" style="background:#052e16;color:#86efac">¿AVANCE?</span></div>
+        <div class="log-desc"><b>Anuladas las órdenes de aprehensión contra los principales dirigentes.</b> El obstáculo clave para el diálogo — las órdenes contra Mario Argollo (COB) y Vicente Salazar (Túpac Katari) — fue levantado, eliminando su condición previa para sentarse a la mesa. <span class="hi-red">Aun así, los bloqueos subieron a 76</span> esa mañana; el personal médico marchó exigiendo una "pausa humanitaria". La apertura es real pero frágil.</div>
+      </div>
+      <div class="log-row" style="background: #100600; border-left: 2px solid var(--amber);">
+        <div class="log-date">30 may 2026</div>
+        <div><span class="log-tag lt-spread">RÉCORD ↑</span></div>
+        <div class="log-desc"><b>93 puntos de bloqueo — nuevo récord</b> en seis departamentos (La Paz 22, Cochabamba 21, Oruro 19, Potosí 15, Chuquisaca 11, Santa Cruz 5). Las protestas cumplen un mes. Se convoca un <i>ampliado nacional</i> decisivo (asamblea masiva) para las <b>14h00 del sábado en La Paz</b> para decidir si negociar o escalar — con diálogo previsto el domingo si las bases aceptan. <span class="hi-a">Las próximas 48 horas son decisivas.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOURIST RISK -->
+  <div>
+    <div class="sec-label">Evaluación de Riesgos para Viajeros</div>
+    <div class="risk-split">
+
+      <!-- Risks -->
+      <div class="risk-panel">
+        <div class="risk-panel-title">
+          <div class="rdot rd-red"></div>
+          Riesgos Activos para Viajeros
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-hi">ALTO</div>
+          <div class="risk-text"><b>Quedar varado por días.</b> Los bloqueos aparecen y desaparecen en horas sin aviso. Incluso rutas confirmadas "abiertas" por las autoridades pueden cerrarse de un día para otro (Potosí–Tupiza, 25→26 may).</div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-hi">ALTO</div>
+          <div class="risk-text"><b>Agresión física en los puntos de bloqueo.</b> La Embajada de EE.UU. documentó expresamente "violencia, agresiones físicas y daños a vehículos" contra conductores que intentaron pasar. No dirigida a turistas en particular, pero indiscriminada.</div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-hi">ALTO</div>
+          <div class="risk-text"><b>Emergencia médica sin acceso.</b> Al menos cinco personas han muerto porque las ambulancias fueron bloqueadas o en medio de operativos de despeje. Cualquier incidente de salud en ruta conlleva un riesgo grave, y los hospitales enfrentan ahora escasez de oxígeno, sangre y medicinas.</div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-med">MEDIO</div>
+          <div class="risk-text"><b>Interrupción del acceso al aeropuerto.</b> Manifestantes atacaron el acceso al aeropuerto de El Alto el 25 may. El aeropuerto está abierto; el riesgo es la carretera de acceso en la zona de La Paz.</div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-med">MEDIO</div>
+          <div class="risk-text"><b>Quedar atrapado en disturbios urbanos.</b> El centro de La Paz, el perímetro de El Alto y las zonas cercanas a edificios gubernamentales han sido escenario de uso de explosivos, incendios y enfrentamientos.</div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-lv rlv-lo">BAJO</div>
+          <div class="risk-text"><b>Ataques dirigidos a viajeros.</b> No se halló evidencia en fuentes en español de manifestantes que ataquen deliberadamente a visitantes extranjeros como tales. El peligro es colateral, no ideológico.</div>
+        </div>
+      </div>
+
+      <!-- Open corridors -->
+      <div class="risk-panel">
+        <div class="risk-panel-title">
+          <div class="rdot rd-green"></div>
+          Corredores Relativamente Más Seguros
+        </div>
+        <div class="open-route">
+          <div class="or-dot">✈</div>
+          <div class="or-text"><b>Transporte aéreo — todos los aeropuertos operando con normalidad.</b> El Alto (La Paz), Viru Viru (Santa Cruz), Jorge Wilstermann (Cochabamba) todos volando. Es la opción de salida recomendada.
+          <span class="caveat">⚠ El acceso por carretera al aeropuerto de El Alto fue disputado el 25 may — prevea tiempo extra.</span></div>
+        </div>
+        <div class="open-route">
+          <div class="or-dot">✓</div>
+          <div class="or-text"><b>Departamento de Tarija — sin bloqueos reportados.</b> La única región andina totalmente despejada. La frontera argentina en Bermejo funciona con normalidad.</div>
+        </div>
+        <div class="open-route">
+          <div class="or-dot warn">⚡</div>
+          <div class="or-text"><b>Potosí → Tupiza → Villazón (frontera argentina).</b> Confirmada abierta por la policía la noche del 25 may.
+          <span class="caveat">⚠ Reportes en terreno indicaron esta ruta bloqueada de nuevo hacia las 00h30 del 26 may. Verifique en tiempo real antes de salir.</span></div>
+        </div>
+        <div class="open-route">
+          <div class="or-dot">✓</div>
+          <div class="or-text"><b>Potosí → Uyuni.</b> Confirmada abierta con tráfico normal al 25 may. Los tours al salar operan.
+          <span class="caveat">Consulte transitabilidad.abc.gob.bo de la ABC antes de viajar.</span></div>
+        </div>
+        <div class="open-route">
+          <div class="or-dot">✓</div>
+          <div class="or-text"><b>Beni y Pando (Amazonía).</b> Sin bloqueos viales reportados. Relevancia limitada para la mayoría de itinerarios turísticos.</div>
+        </div>
+        <div class="open-route">
+          <div class="or-dot warn">⚡</div>
+          <div class="or-text"><b>Ciudad de Santa Cruz y aeropuerto Viru Viru.</b> Ciudad accesible; algunas rutas de salida al suroeste bloqueadas. El aeropuerto es la salida más segura de esta región.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ANALYST NOTE -->
+  <div class="compare-box">
+    <span class="compare-label">⚑ ANALOGÍA HISTÓRICA — CNN EN ESPAÑOL Y ANALISTAS LOCALES</span>
+    La crisis se compara directamente con <b>octubre de 2003</b>, cuando bloqueos de carreteras similares, muertes en aumento y demandas irreconciliables forzaron la renuncia del presidente Gonzalo Sánchez de Lozada — la última crisis comparable de Bolivia. Aquel pulso duró 3–4 semanas antes de la caída del presidente. Un analista de CNN señaló: la situación actual carece del liderazgo unificado de aquella crisis, lo que podría dificultar su resolución — ningún interlocutor único puede entregar un acuerdo vinculante aunque Paz ceda.
+  </div>
+
+  <!-- TRAVELLER GUIDANCE BOX -->
+  <div class="decision-box">
+    <div class="dec-leg">
+      <div class="dec-date">La Paz<br>y El Alto</div>
+      <div class="dec-status">
+        <span class="dec-bad">⛔ EVITAR — zona de mayor riesgo.</span> La sede de gobierno está cercada por la mayor cantidad de bloqueos (22 puntos) y ha visto la peor violencia: explosivos, vehículos quemados, agresiones a transeúntes y periodistas. Alimentos, combustible, oxígeno y medicinas escasean gravemente. Manifestantes han atacado de forma intermitente el acceso al aeropuerto internacional de El Alto. Si transita por aire, minimice el tiempo en tierra y no se desplace por la ciudad por carretera.
+      </div>
+    </div>
+
+    <div class="dec-leg">
+      <div class="dec-date">Núcleo del altiplano<br>Oruro · Cochabamba</div>
+      <div class="dec-status">
+        <span class="dec-bad">⛔ EVITAR por carretera.</span> Son los departamentos con bloqueos más <i>densos</i>. El eje vial La Paz–Oruro–Cochabamba se corta una y otra vez, con cientos de vehículos varados por días. Dos operativos militares de despeje ya han fracasado aquí. El terreno montañoso deja pocas rutas alternativas.
+      </div>
+    </div>
+
+    <div class="dec-leg">
+      <div class="dec-date">Potosí · Uyuni<br>· Tupiza</div>
+      <div class="dec-status">
+        <span class="dec-warn">⚡ VOLÁTIL — verifique hora a hora.</span> El departamento de Potosí tiene 15 puntos de bloqueo. El salar de Uyuni y los pueblos en sí han seguido siendo en general accesibles, y los corredores a Uyuni y a Villazón (frontera argentina) han abierto y cerrado repetidamente. Rutas confirmadas abiertas por la policía se han vuelto a bloquear en horas. Viaje solo con confirmación local del mismo día; nunca suponga que una ruta seguirá abierta.
+      </div>
+    </div>
+
+    <div class="dec-leg">
+      <div class="dec-date">Santa Cruz<br>y tierras bajas del este</div>
+      <div class="dec-status">
+        <span class="dec-ok">✓ REGIÓN MÁS SEGURA.</span> Solo 3 puntos de bloqueo periféricos; la ciudad y el aeropuerto internacional Viru Viru operan con normalidad. Las tierras bajas circundantes (incl. Amboró) están en gran medida sin afectar. Para viajeros que necesiten esperar a que pase la crisis o salir al exterior, es la base más confiable.
+      </div>
+    </div>
+
+    <div class="dec-leg">
+      <div class="dec-date">Tarija · Beni<br>· Pando</div>
+      <div class="dec-status">
+        <span class="dec-ok">✓ SIN BLOQUEOS REPORTADOS.</span> El extremo sur (Tarija, con pasos fronterizos argentinos en funcionamiento) y los departamentos amazónicos del norte están despejados, aunque quedan fuera de la mayoría de las rutas turísticas habituales.
+      </div>
+    </div>
+
+    <div class="dec-verdict">
+      <b>Guía general (30 may):</b> El transporte aéreo sigue siendo la única forma fiable de moverse entre regiones, y todos los aeropuertos principales operan — aunque las <i>vías de acceso</i> a los aeropuertos, sobre todo en La Paz, pueden verse interrumpidas. <span class="go">Considere Santa Cruz y las tierras bajas del este como el ancla segura</span> y <span class="nogo">considere el altiplano La Paz–Oruro–Cochabamba como vedado por carretera.</span> Aunque la anulación del 29 de mayo de las órdenes de aprehensión contra los dirigentes reabrió la vía al diálogo, los bloqueos siguen en un récord de 93 y no hay acuerdo — así que ningún viajero debería aún planear en torno a una mejora cercana. La regla más importante: <b>no intente viajes largos por carretera a través del altiplano</b>, y reconfirme el estado de cualquier vuelo y del acceso al aeropuerto el mismo día del viaje. Regístrese en su embajada o consulado para recibir alertas oficiales directamente.
+    </div>
+  </div>
+
+  <div class="status-box">
+    <div class="status-para">
+      <b>Trayectoria:</b> <span class="hi-r">bloqueos en un récord de 93, pero ha surgido una apertura diplomática genuina.</span> Las cifras son las peores hasta ahora — el país alcanzó un pico mensual de 93 puntos de bloqueo el 30 de mayo. Sin embargo, el 29 de mayo el Gobierno anuló las órdenes de aprehensión contra los dos principales dirigentes, eliminando la condición previa que habían puesto para negociar. <span class="hi-a">Por primera vez, desaparece el obstáculo que hizo fracasar las conversaciones del 28 de mayo.</span>
+    </div>
+    <div class="status-para">
+      <b>Las 48 horas decisivas:</b> Un ampliado nacional está convocado para la tarde del sábado en La Paz, donde los sectores movilizados decidirán si negocian o intensifican, con diálogo previsto el domingo si las bases aceptan. O bien (1) la asamblea acepta el diálogo y por fin empieza una desescalada, o (2) vota intensificar, y Paz — ahora con respaldo legal de la ley de despliegue militar — podría declarar el estado de excepción. <span class="hi-r">La segunda vía implicaría probablemente una escalada brusca, quizá violenta, primero.</span> La anulación de las órdenes inclina la balanza ligeramente hacia el diálogo, pero el récord de bloqueos muestra que la presión sigue creciendo.
+    </div>
+    <div class="status-para">
+      <b>Trasfondo humanitario:</b> empeora al margen de la política. Las reservas de sangre se reportan "al límite", los hospitales escasean de oxígeno y medicinas, y solo El Alto pierde unos $6,5M al día. Cuanto más dure, más se degrada el funcionamiento básico del país.
+    </div>
+    <div class="status-para">
+      <b>Para viajeros:</b> <span class="hi-g">las tierras bajas del este (Santa Cruz) y el extremo sur (Tarija) siguen siendo las zonas más transitables, y el transporte aéreo entre regiones aún funciona.</span> <span class="hi-r">El altiplano La Paz–Oruro–Cochabamba es la zona de peligro y no debe cruzarse por carretera.</span> Sin un avance diplomático a la vista, lo prudente es evitar por completo los viajes por carretera en el altiplano, ceñirse a regiones con aeropuertos en funcionamiento y reconfirmar vuelos y acceso a aeropuertos el mismo día del viaje, en vez de fiarse de condiciones reportadas incluso unas horas antes.
+    </div>
+  </div>
+
+  <!-- COMENTARIOS / OBSERVACIONES -->
+  <div>
+    <div class="sec-label">Observaciones, Comentarios y Correcciones</div>
+    <div class="remarks-box">
+      <h3>Ayude a mantener esto al día</h3>
+      <p>Si detecta información incorrecta o desactualizada, o tiene una actualización desde el terreno para compartir, escriba a <a href="mailto:bolivia.crisis@outlook.com">bolivia.crisis@outlook.com</a>. Los reportes se revisan y verifican con fuentes oficiales antes de actualizar la página — su aporte ayuda a otros viajeros.</p>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer class="footer">
+  <div>MONITOR DE CRISIS EN BOLIVIA · ACTUALIZADO 30 DE MAYO DE 2026 · REFERENCIA DE SEGURIDAD PARA VIAJES · NO ES ASESORÍA OFICIAL</div>
+  <div>ESTADO VIAL EN VIVO → transitabilidad.abc.gob.bo · REGÍSTRESE Y CONTACTE SIEMPRE A SU PROPIA EMBAJADA O CONSULADO</div>
+</footer>
+
+<script>
+  // ─── CONNECTIVITY GRAPH ───────────────────────────────
+  (function(){
+    const NODES = {
+      "La Paz":[140,360,"hub"],"Copacabana":[66,330,"hub"],"Sorata":[104,305,"hub"],
+      "Oruro":[199,440,"hub"],"Patacamaya":[150,402,"hub"],"Cochabamba":[262,408,"hub"],
+      "Sucre":[322,500,"hub"],"Potosí":[288,528,"hub"],"Uyuni":[212,575,"hub"],
+      "Tupiza":[292,628,"hub"],"Santa Cruz":[455,432,"hub"],"Samaipata":[410,458,"hub"],
+      "Buena Vista":[424,410,"hub"],"Rurrenabaque":[175,250,"hub"],
+      "Kasani":[40,342,"border"],"Desaguadero":[62,378,"border"],"Puerto Acosta":[60,300,"border"],
+      "Tambo Quemado":[86,458,"border"],"Pisiga":[104,510,"border"],"Ollagüe":[138,605,"border"],
+      "Hito Cajón":[165,695,"border"],"Villazón":[300,672,"border"],"Bermejo":[388,700,"border"],
+      "Yacuiba":[434,660,"border"],"Puerto Suárez":[800,470,"border"],"Guayaramerín":[315,70,"border"],
+      "Cobija":[95,80,"border"],"San Matías":[740,360,"border"],"Cañada Oruro":[495,668,"border"]
+    };
+    const EDGES = [
+      ["La Paz","Patacamaya","hard","Corredor clave La Paz–Oruro; múltiples cortes en Patacamaya, Calamarca, Achica Arriba."],
+      ["Patacamaya","Oruro","hard","Bloqueado en los accesos de Caracollo y Curahuara; camiones varados por días."],
+      ["La Paz","Oruro","severed","Sin ruta directa despejada; todo el eje La Paz–Oruro es el epicentro del bloqueo."],
+      ["Oruro","Cochabamba","hard","Cortes en Cayhuasi, Aranjuez, Cumbre, Ocotavi; algo de paso por carril izquierdo con resguardo policial."],
+      ["La Paz","Copacabana","hard","Ruta vía Huarina/Río Seco cortada repetidamente; difícil llegar a Copacabana por el lago."],
+      ["La Paz","Sorata","caution","Salida norte cortada de forma intermitente cerca de Río Seco; paso ocasional."],
+      ["La Paz","Rurrenabaque","caution","Carretera Yungas/Caranavi cortada en puntos (Yolosa–Santa Bárbara) pero con movimiento parcial."],
+      ["Cochabamba","Santa Cruz","hard","Huayllani (km10) bloqueado desde el 18 may; carriles alternos usados con precaución en Tutimayu, Colomi, Aguirre."],
+      ["Cochabamba","Sucre","hard","Cruce de Vacas bloqueado, cortando el enlace Cochabamba–Sucre."],
+      ["Oruro","Uyuni","caution","Cortes en el límite Oruro–Potosí (Belem Pampa) afectan esta ruta; intermitente."],
+      ["Potosí","Oruro","hard","El límite Oruro–Potosí y Yocalla–Tarapaya cortan el acceso norte a Potosí."],
+      ["Potosí","Uyuni","caution","Yocalla–Tarapaya cortado cerca de Potosí; el lado de Uyuni suele ser accesible, pero verifique."],
+      ["Potosí","Sucre","hard","Cortes en los sectores Betanzos, Turuchipa, Puna en la carretera Potosí–Sucre."],
+      ["Potosí","Tupiza","caution","Reportada abierta y luego rebloqueada en horas (finales de mayo); muy volátil."],
+      ["Uyuni","Tupiza","caution","Corredor de Atocha; los cortes locales van y vienen — verificación el mismo día esencial."],
+      ["Tupiza","Villazón","hard","Villazón sitiada por el paro del transporte; acceso al pueblo y al puente cortado."],
+      ["Uyuni","Ollagüe","caution","Paso remoto a Chile; ruta tranquila pero aislada, verifique combustible y paso."],
+      ["Uyuni","Hito Cajón","caution","Ruta turística del salar a San Pedro de Atacama (Chile); generalmente usable, remota."],
+      ["Potosí","Pisiga","severed","Sin enlace directo; Pisiga se alcanza vía Oruro, que está bloqueado duramente."],
+      ["Sucre","Santa Cruz","caution","Ruta larga del este; Chuquisaca tiene cortes pero el acceso por tierras bajas es más leve."],
+      ["Santa Cruz","Samaipata","caution","Un bloqueo reportado en el sector El Fuerte (Samaipata) en la carretera Bermejo–Mairana."],
+      ["Santa Cruz","Buena Vista","open","Corredor norte de Santa Cruz mayormente abierto; solo restricciones leves."],
+      ["Samaipata","Sucre","caution","Carretera de montaña hacia Chuquisaca; cortes parciales más al oeste."],
+      ["Santa Cruz","Yacuiba","open","Ruta sur del Chaco a la frontera argentina generalmente abierta."],
+      ["Santa Cruz","Puerto Suárez","open","Corredor este a la frontera con Brasil (Quijarro) operando."],
+      ["Santa Cruz","San Matías","open","Ruta noreste a la frontera con Brasil generalmente despejada."],
+      ["Santa Cruz","Cañada Oruro","open","Ruta del Chaco hacia la frontera con Paraguay; despejada."],
+      ["Buena Vista","Rurrenabaque","severed","Sin carretera directa; requeriría la red bloqueada del altiplano/Yungas."],
+      ["Copacabana","Kasani","open","Salto corto al paso de Perú (Yunguyo); transitable localmente."],
+      ["Copacabana","Desaguadero","hard","Vías de acceso a Desaguadero (Guaqui, Tihuanacu) cortadas; >1.000 camiones varados, solo transbordo a pie."],
+      ["La Paz","Desaguadero","hard","Ruta al Desaguadero–Patamanta cortada; el paso a Perú solo se alcanza por vías informales."],
+      ["Sorata","Puerto Acosta","caution","Paso remoto del norte del lago Titicaca a Perú; tranquilo, verifique."],
+      ["Oruro","Tambo Quemado","hard","Principal paso de carga a Chile (Arica); acceso por el corredor bloqueado Curahuara/Carangas."],
+      ["Oruro","Pisiga","hard","Paso a Chile (Colchane); se llega por rutas del oeste de Oruro con bloqueo duro."],
+      ["Tupiza","Bermejo","caution","Paso argentino; Bermejo tuvo desvíos pero el lado de Aguas Blancas se reportó transitable con precaución."],
+      ["Rurrenabaque","Guayaramerín","severed","Paso amazónico norte a Brasil; sin ruta directa, región en emergencia humanitaria."],
+      ["Rurrenabaque","Cobija","severed","Paso amazónico de Pando; aislado, sin enlace vial viable actualmente."],
+      ["Yacuiba","Cañada Oruro","open","Ambos pasos del sur del Chaco accesibles desde la red abierta de tierras bajas de Santa Cruz."]
+    ];
+    const svg = document.getElementById("cgGraph");
+    if (!svg) return;
+    const NS = "http://www.w3.org/2000/svg";
+    const ord = {severed:0,hard:1,caution:2,open:3};
+    const sClass = {open:"cs-open",caution:"cs-caution",hard:"cs-hard",severed:"cs-severed"};
+    const sIcon = {open:"✓",caution:"≈",hard:"✕",severed:"∅"};
+    const sCol = {open:"var(--green)",caution:"var(--amber)",hard:"#f97316",severed:"var(--red)"};
+    const sWord = {open:"ABIERTA",caution:"PRECAUCIÓN",hard:"BLOQUEO DURO",severed:"SIN CONEXIÓN"};
+    const leftLabel = ["Kasani","Desaguadero","Puerto Acosta","Copacabana","Tambo Quemado","Pisiga","Ollagüe","Cobija"];
+    // Destination country for each border crossing (flag shown on the node)
+    const BORDER_FLAG = {
+      "Kasani":"🇵🇪","Desaguadero":"🇵🇪","Puerto Acosta":"🇵🇪",
+      "Tambo Quemado":"🇨🇱","Pisiga":"🇨🇱","Ollagüe":"🇨🇱","Hito Cajón":"🇨🇱",
+      "Villazón":"🇦🇷","Bermejo":"🇦🇷","Yacuiba":"🇦🇷",
+      "Puerto Suárez":"🇧🇷","Guayaramerín":"🇧🇷","Cobija":"🇧🇷","San Matías":"🇧🇷",
+      "Cañada Oruro":"🇵🇾"
+    };
+    const edgeEls=[]; const nodeEls={};
+    // The SVG is pre-rendered as static markup (so it works without JS).
+    // Here we attach interactivity to the existing elements rather than recreating them.
+    const edgeByPair = {};
+    EDGES.forEach(([a,b,status,note])=>{ edgeByPair[a+"||"+b] = {status,note}; });
+    svg.querySelectorAll("line.cg-edge").forEach(line=>{
+      const a=line.dataset.a, b=line.dataset.b;
+      const info = edgeByPair[a+"||"+b];
+      if(!info) return;
+      line.addEventListener("click",ev=>{ev.stopPropagation();showEdge(a,b,info.status,info.note);});
+      edgeEls.push(line);
+    });
+    svg.querySelectorAll("g.cg-node-hit").forEach(g=>{
+      const name=g.dataset.name;
+      if(!NODES[name]) return;
+      const type=NODES[name][2];
+      const dot=g.querySelector("circle.cg-dot");
+      const label=g.querySelector("text.cg-lbl");
+      // insert a background rect behind the label for legibility
+      const bg=document.createElementNS(NS,"rect");bg.setAttribute("class","cg-lbl-bg");
+      g.insertBefore(bg,label);
+      g.addEventListener("click",ev=>{ev.stopPropagation();selectNode(name);});
+      nodeEls[name]={dot,label,bg,type};
+    });
+    requestAnimationFrame(()=>{for(const o of Object.values(nodeEls)){try{const bb=o.label.getBBox();o.bg.setAttribute("x",bb.x-2);o.bg.setAttribute("y",bb.y-1);o.bg.setAttribute("width",bb.width+4);o.bg.setAttribute("height",bb.height+2);}catch(e){}}});
+    svg.addEventListener("click",reset);
+    function neighbors(name){const out=[];EDGES.forEach(([a,b,s,n])=>{if(a===name)out.push({to:b,s,n});else if(b===name)out.push({to:a,s,n});});out.sort((p,q)=>ord[p.s]-ord[q.s]);return out;}
+    function selectNode(name){
+      const nb=new Set([name]);EDGES.forEach(([a,b])=>{if(a===name)nb.add(b);if(b===name)nb.add(a);});
+      edgeEls.forEach(l=>{const on=(l.dataset.a===name||l.dataset.b===name);l.classList.toggle("dim",!on);l.classList.toggle("hot",on);});
+      for(const [n,o] of Object.entries(nodeEls)){const on=nb.has(n);o.dot.classList.toggle("dim",!on);o.label.classList.toggle("dim",!on);o.bg.classList.toggle("dim",!on);}
+      const type=NODES[name][2];const nbl=neighbors(name);const color=type==="hub"?"#60a5fa":"#c084fc";
+      let h=`<div class="cg-detail-head"><span class="cg-dh-dot" style="border-color:${color};background:${type==='hub'?'rgba(96,165,250,0.22)':'rgba(192,132,252,0.18)'};${type==='hub'?'border-radius:50%':'border-radius:3px'}"></span><h3>${name}${BORDER_FLAG[name]?" "+BORDER_FLAG[name]:""}</h3><span class="cg-dh-type">${type==="hub"?"Destino turístico":"Paso fronterizo"} · ${nbl.length} ruta${nbl.length!==1?"s":""}</span></div><div class="cg-detail-body">`;
+      nbl.forEach(({to,s,n})=>{h+=`<div class="cg-conn"><span class="cg-conn-icon" style="color:${sCol[s]}">${sIcon[s]}</span><span class="cg-conn-to">${to}<span class="cn-note">${n}</span></span><span class="cg-conn-status ${sClass[s]}">${sWord[s]}</span></div>`;});
+      h+=`</div>`;document.getElementById("cgDetail").innerHTML=h;
+    }
+    function showEdge(a,b,status,note){
+      edgeEls.forEach(l=>{const on=(l.dataset.a===a&&l.dataset.b===b);l.classList.toggle("dim",!on);l.classList.toggle("hot",on);});
+      const nb=new Set([a,b]);
+      for(const [n,o] of Object.entries(nodeEls)){const on=nb.has(n);o.dot.classList.toggle("dim",!on);o.label.classList.toggle("dim",!on);o.bg.classList.toggle("dim",!on);}
+      document.getElementById("cgDetail").innerHTML=`<div class="cg-detail-head"><span class="cg-dh-dot" style="border-color:${sCol[status]};background:transparent"></span><h3 style="font-size:15px">${a} ↔ ${b}</h3><span class="cg-dh-type">${sWord[status]}</span></div><div class="cg-detail-body"><div class="cg-conn" style="grid-template-columns:16px 1fr;border:none"><span class="cg-conn-icon" style="color:${sCol[status]}">${sIcon[status]}</span><span class="cg-conn-to">${note}</span></div></div>`;
+    }
+    function reset(){
+      edgeEls.forEach(l=>l.classList.remove("dim","hot"));
+      for(const o of Object.values(nodeEls)){o.dot.classList.remove("dim");o.label.classList.remove("dim");o.bg.classList.remove("dim");}
+      document.getElementById("cgDetail").innerHTML='<div class="cg-detail-empty">Toque una ubicación para ver el estado ruta por ruta, o toque una línea para esa conexión específica. (La severidad refleja datos ABC del 29–30 de mayo y puede cambiar en horas.)</div>';
+    }
+  })();
+
+  // ─── AIRPORT MAP (tap for detail) ─────────────────────
+  (function(){
+    const svg = document.getElementById("apGraph");
+    const detail = document.getElementById("apDetail");
+    if(!svg || !detail) return;
+    const word = {open:"Operativo + accesible por carretera",partial:"Operativo, cierres viales parciales",isolated:"Operativo, inaccesible por carretera",down:"No operativo"};
+    const col = {open:"#22c55e",partial:"#eab308",isolated:"#f97316",down:"#ef4444"};
+    svg.querySelectorAll("g.ap-node").forEach(g=>{
+      g.addEventListener("click",ev=>{
+        ev.stopPropagation();
+        const name=g.dataset.name, st=g.dataset.status, note=g.dataset.note;
+        detail.style.display="block";
+        detail.innerHTML='<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="width:11px;height:11px;transform:rotate(45deg);display:inline-block;background:'+col[st]+'"></span><b style="color:var(--text);font-size:13px">'+name+'</b><span style="font-family:ui-monospace,monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:'+col[st]+'">'+word[st]+'</span></div><div style="margin-top:6px;font-size:11.5px;color:var(--text-dim);line-height:1.55">'+note+'</div>';
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
